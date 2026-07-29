@@ -3,7 +3,7 @@ name = "reef"
 version = "1.0.0"
 description = "A lightweight API that serves Airflow DAG bundles on top of Rest API."
 authors = ["TKul6 <TKul6@github.com>"]
-readme = "docs/README.md"
+readme = "README.md"
 packages = [{include = "reef"}]
 
 [tool.poetry.dependencies]

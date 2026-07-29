@@ -1,57 +1,56 @@
-# Reef — Airflow DAGs Server
+# Reef Server
 
-Reef is a lightweight FastAPI microservice that serves DAG files to airflow using REST API.
+The Reef server is a lightweight FastAPI microservice that serves DAG files to Airflow over a REST API. It holds one
+immutable `dags.tar.gz` archive, baked into its image at build time, and answers questions about it.
 
-## Why
-When running airflow on Kubernetes, updating the dags can be pretty complecated:
-- Adding the dags to the docker image require replacing the image on every build, which result in downtime.
-- Using PVC might be a little tricky, especially if you are not woring in a single AZ in Kuebrentes.
-
-## The solution - Reef!
-Reef suggests a new way to hot swap dags with no Downtime! No more restarting the whole environment — which cuts down how often production has to be restarted.
-
-Reef will pack your dags and serves them via Rest api!
-On the airflow side, a special Bundle (Called `ReefDagBundle`) will communicate with the Reef server.
+This page covers building, configuring, and operating the server. For the problem Reef solves and how the pieces fit
+together, start at the [solution README](../README.md).
 
 ---
 
-## Prerequisites
+## Building an image with your DAGs
 
-**Airflow 3.1 or newer.** Reef is built on Airflow 3's
-[DAG Bundle](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/dag-bundles.html)
-interface (`BaseDagBundle`), so Airflow 2 is not supported.
+Everything that varies between deployments — which DAGs, which version — is decided when the image is built. Pack your
+DAG files into `dags.tar.gz`, layer it on top of the base image, and tell Reef which version it is serving:
+
+```dockerfile
+FROM reef:<version>
+
+COPY dags.tar.gz /dags/dags.tar.gz
+# Optional but recommended — see "Signatures" below
+COPY dags_version.txt /dags/dags_version.txt
+
+ENV DAGS_DIR=/dags
+ENV DAGS_VERSION=1.2.0
+ENV REEF_SERVER_VERSION=<version>
+```
+
+The base image already starts the server, so a child image does not need its own `CMD`.
 
 ---
 
-## How It Works
-
-TBD
-
-### Building an image with your DAGs
-
-TBD
-
-### Signatures
-
-Since usually dags do not change on every cycle (30 seconds), reef will store a signature to compare on every cycle, if the signature hasn't changed, the bundle will not download the dags again.
-
->Note: The signature is provided on build time, you can provide your own signature. When packing the dags, reef will add the signature to the 
+## Signatures
 
 `GET /api/v1/dags/metadata` hands back a `signature` — the value `ReefDagBundle` watches when deciding whether to
-re-download. Reef works it out once per process, preferring:
+re-download. Reef resolves it once per process, preferring:
 
-1. Whatever `dags_version.txt` holds, when that file sits next to the archive.
+1. Whatever `dags_version.txt` holds, when that file sits next to the archive in `DAGS_DIR`.
 2. Failing that, a SHA-256 of `dags.tar.gz` cut down to 12 hex characters. It does the job, but it costs a full read of
    the archive on the first request and emits a warning.
 
 Writing `dags_version.txt` during the build is the cheaper route, and it puts you in control of what qualifies as a
-change.
+change. Reef does not generate the file — write whatever your build already knows (a CI build number, a git SHA) and
+`COPY` it in alongside the archive, as shown above.
+
+Because the archive cannot change while the container lives, the resolved signature is cached for the life of the
+process. A new set of DAGs means a new image, which means a new process.
 
 ---
 
 ## Configuration
 
-The configuration is required only for local runs, If you run reef from a docker image, everything is already configured!
+Configuration is only needed for local runs. If you run Reef from a Docker image built as shown above, everything is
+already set.
 
 ### Basic
 
@@ -59,7 +58,6 @@ The configuration is required only for local runs, If you run reef from a docker
 |---|---|---|
 | `REEF_HOST` | `0.0.0.0` | Address the server binds to |
 | `REEF_PORT` | `8080` | Port the server listens on |
-
 
 ### Advanced
 
@@ -125,7 +123,7 @@ When readiness answers `503`:
 
 ```bash
 curl -s http://<reef-host>:8080/api/v1/dags/metadata
-# Expected: {"version":"1.2.0","signature":"a3f9c1d2e4b5"}
+# Expected: {"version":"1.2.0","signature":"1205555-6"}
 ```
 
 Since a changed `signature` is exactly what makes `ReefDagBundle` re-download, this endpoint is the fastest way to tell
@@ -135,5 +133,6 @@ whether a new image is serving different content than the one before it.
 
 ## Further Reading
 
-- [API Reference](api.md) — the full specification for every Reef REST endpoint, covering response shapes, error codes,
-  and field descriptions.
+- [API Reference](../docs/api.md) — the full specification for every Reef REST endpoint, covering response shapes, error
+  codes, and field descriptions.
+- [Solution overview](../README.md) — the problem Reef solves and how the server and `ReefDagBundle` work together.
