@@ -1,11 +1,17 @@
-# Reef — Airflow DAG Bundle Server
+# Reef — Airflow DAGs Server
 
-Reef is a lightweight FastAPI microservice that swaps DAGs into a running Airflow 3 environment on the fly, so shipping
-new DAGs no longer means restarting the whole environment — which cuts down how often production has to be restarted.
-Your DAG files are packaged into a versioned `dags.tar.gz` archive baked straight into a Docker image, and Reef serves
-that archive over a small HTTP API. Airflow's `ReefDagBundle` (shipped in the companion `reef_bundle` package) polls
-Reef's `/api/v1/dags/metadata` endpoint, notices when the content signature changes, and fetches the new archive by
-itself.
+Reef is a lightweight FastAPI microservice that serves DAG files to airflow using REST API.
+
+## Why
+When running airflow on Kubernetes, updating the dags can be pretty complecated:
+- Adding the dags to the docker image require replacing the image on every build, which result in downtime.
+- Using PVC might be a little tricky, especially if you are not woring in a single AZ in Kuebrentes.
+
+## The solution - Reef!
+Reef suggests a new way to hot swap dags with no Downtime! No more restarting the whole environment — which cuts down how often production has to be restarted.
+
+Reef will pack your dags and serves them via Rest api!
+On the airflow side, a special Bundle (Called `ReefDagBundle`) will communicate with the Reef server.
 
 ---
 
@@ -19,43 +25,17 @@ interface (`BaseDagBundle`), so Airflow 2 is not supported.
 
 ## How It Works
 
-Reef serves one immutable archive and nothing else. Everything that differs between deployments — which DAGs, which
-version — is settled at image build time:
-
-```
-dags.tar.gz + dags_version.txt   baked into an image FROM reef:<version>
-        │
-        ▼
-Reef pod starts, serves that archive over HTTP
-        │
-        ▼
-ReefDagBundle (running inside Airflow) polls /api/v1/dags/metadata
-  • Compares the returned signature against the one it already has
-  • On a change, downloads the archive from /api/v1/dags/download
-  • Clears and re-extracts Airflow's local bundle directory
-  • Airflow picks up new/changed DAGs on its next scan
-```
-
-Since the archive is baked in during the build, each Reef image stands on its own and needs no external storage at
-runtime. Publishing new DAGs is a matter of rolling out a new Reef image; Airflow itself keeps running throughout.
+TBD
 
 ### Building an image with your DAGs
 
-Stack your archive on top of the base image and declare which version Reef is serving:
-
-```dockerfile
-FROM reef:<version>
-
-COPY dags.tar.gz /dags/dags.tar.gz
-# Optional but recommended — see "Signatures" below
-COPY dags_version.txt /dags/dags_version.txt
-
-ENV DAGS_DIR=/dags
-ENV DAGS_VERSION=1.2.0
-ENV REEF_SERVER_VERSION=<version>
-```
+TBD
 
 ### Signatures
+
+Since usually dags do not change on every cycle (30 seconds), reef will store a signature to compare on every cycle, if the signature hasn't changed, the bundle will not download the dags again.
+
+>Note: The signature is provided on build time, you can provide your own signature. When packing the dags, reef will add the signature to the 
 
 `GET /api/v1/dags/metadata` hands back a `signature` — the value `ReefDagBundle` watches when deciding whether to
 re-download. Reef works it out once per process, preferring:
@@ -71,10 +51,20 @@ change.
 
 ## Configuration
 
+The configuration is required only for local runs, If you run reef from a docker image, everything is already configured!
+
+### Basic
+
 | Variable | Default | Purpose |
 |---|---|---|
 | `REEF_HOST` | `0.0.0.0` | Address the server binds to |
 | `REEF_PORT` | `8080` | Port the server listens on |
+
+
+### Advanced
+
+| Variable | Default | Purpose |
+|---|---|---|
 | `DAGS_DIR` | `/dags` | Directory holding `dags.tar.gz` (and optionally `dags_version.txt`) |
 | `DAGS_VERSION` | — | Version of the DAGs being served. Required; endpoints return `500` when unset |
 | `REEF_SERVER_VERSION` | — | Version of the Reef server itself, reported by `/api/v1/information` |
