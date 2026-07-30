@@ -1,0 +1,47 @@
+name: Reef server - CI
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: reef-server
+  IMAGE_VERSION: "1.0.0"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  build:
+    name: Test and build the base image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # The runner is not assumed to ship with a usable Python, so install the one
+      # the Dockerfile is built on.
+      - name: Install Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: pip install --no-cache-dir poetry
+
+      - name: Install dependencies
+        run: poetry install --with dev
+
+      - name: Run tests
+        run: poetry run pytest
+
+      # Tagged twice from a single build: `latest` for anyone tracking the newest
+      # base image, and the explicit version for images that need to pin.
+      - name: Build the Reef server base image
+        run: |
+          docker build \
+            --file Dockerfile \
+            .
+
+      - name: List the built tags
+        run: docker images "${IMAGE_NAME}"
