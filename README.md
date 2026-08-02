@@ -1,3 +1,7 @@
+<p align="center">
+    <img src="reef.png" alt="Reef Logo" height="400">
+</p>
+
 # Reef — Hot-Swap Airflow DAGs Without Restarting Airflow
 
 Reef is a solution for delivering DAG files to Airflow 3 over a REST API, so that shipping new DAGs no longer means
@@ -28,8 +32,11 @@ The solution has two halves:
 
 | Piece | Where it runs | What it does |
 |---|---|---|
-| **Reef server** | Its own pod | Serves one versioned `dags.tar.gz` over a small REST API |
-| **Reef Dag Bundle** | Inside Airflow | An Airflow DAG bundle that polls Reef and refreshes the local DAG directory |
+| **[Reef server](reef/README.md)** | Its own pod | Serves one versioned `dags.tar.gz` over a small REST API |
+| **[Reef DAG bundle](reef-bundle/README.md)** | Inside Airflow | An Airflow DAG bundle that polls Reef and refreshes the local DAG directory |
+
+The server lives in [`reef/`](reef/README.md) and ships as a Docker image. The bundle lives in
+[`reef-bundle/`](reef-bundle/README.md) and installs as a Python package into your Airflow image.
 
 ---
 
@@ -66,7 +73,7 @@ flowchart LR
     image ==>|"deploy"| reef
 ```
 
-Because the archive is baked into the image at build time, a Reef serverf pod is fully self-contained: no shared volume, no
+Because the archive is baked into the image at build time, a Reef server pod is fully self-contained: no shared volume, no
 external storage, and nothing to keep in sync at runtime. Rolling out new DAGs is a rollout of the small Reef
 deployment, and Airflow is not part of it.
 
@@ -112,5 +119,7 @@ interface (`BaseDagBundle`), so Airflow 2 is not supported.
 ## Further Reading
 
 - [Reef Server](reef/README.md) — building an image with your DAGs, configuration, running locally, and troubleshooting.
+- [Reef DAG Bundle](reef-bundle/README.md) — installing the bundle into Airflow, the `airflow.cfg` entry, and every
+  parameter it takes.
 - [API Reference](docs/api.md) — the full specification for every Reef REST endpoint, covering response shapes, error
   codes, and field descriptions.

@@ -1,0 +1,51 @@
+name: Reef bundle - CI
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - reef-bundle/
+
+
+env:
+  PYTHON_VERSION: "3.12"
+
+# Every `run` step below executes inside the package directory, since the bundle is its own
+# Poetry project rather than part of the server at the repository root.
+defaults:
+  run:
+    working-directory: reef-bundle
+
+jobs:
+  build:
+    name: Test and build the package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # The runner is not assumed to ship with a usable Python, so install one explicitly.
+      - name: Install Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: pip install --no-cache-dir poetry
+
+      - name: Install dependencies
+        run: poetry install --with dev
+
+      # Airflow is not installed here, and the suite does not need it: every tested path lives
+      # in helper.py and client.py, neither of which imports airflow.
+      - name: Run tests
+        run: poetry run pytest
+
+      # Builds the sdist and the wheel into reef-bundle/dist/ and stops there. Publishing is a
+      # release decision, not something a pull request should be able to do.
+      - name: Build the package
+        run: poetry build
+
+      - name: List the built artifacts
+        run: ls -l dist

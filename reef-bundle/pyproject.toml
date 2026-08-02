@@ -1,0 +1,83 @@
+[tool.poetry]
+name = "reef-bundle"
+version = "1.0.0"
+description = "Airflow DAG bundle that fetches versioned DAGs from a Reef server."
+authors = ["TKul6 <TKul6@github.com>"]
+readme = "README.md"
+packages = [{include = "reef_bundle"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.32.4"
+urllib3 = "^2.7.0"
+
+# Apache Airflow is deliberately absent. The bundle is installed into an environment that already
+# provides it, and pinning it here would drag a second Airflow into that image. Everything under
+# tests/ stays clear of the airflow import for the same reason.
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.14.0"
+pytest = "^8.0"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 150
+preview = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # pyflakes
+    "I", # isort
+]
+ignore = []
+
+extend-select = [
+    "E111", # indentation is not a multiple of four
+    "E117", # over-indented
+    "E201", # whitespace after '('
+    "E202", # whitespace before ')'
+    "E203", # whitespace before ':'
+    "E211", # whitespace before '('
+    "E221", # multiple spaces before operator
+    "E222", # multiple spaces after operator
+    "E223", # tab before operator
+    "E224", # tab after operator
+    "E225", # missing whitespace around operator
+    "E226", # missing whitespace around arithmetic operator
+    "E227", # missing whitespace around bitwise or shift operator
+    "E228", # missing whitespace around modulo operator
+    "E231", # missing whitespace after ','
+    "E241", # multiple spaces after ','
+    "E242", # tab after ','
+    "E251", # unexpected spaces around keyword / parameter equals
+    "E261", # at least two spaces before inline comment
+    "E262", # inline comment should start with '# '
+    "E265", # block comment should start with '# '
+    "E266", # too many leading '#' for block comment
+    "E271", # multiple spaces after keyword
+    "E272", # multiple spaces before keyword
+    "E273", # tab after keyword
+    "E274", # tab before keyword
+    "E275", # missing whitespace after keyword
+    "E301", # expected 1 blank line, found 0
+    "E302", # expected 2 blank lines, found 0
+    "E303", # too many blank lines
+    "E304", # blank lines found after function decorator
+    "E305", # expected 2 blank lines after end of function or class
+    "E306", # expected 1 blank line before a nested definition
+]
