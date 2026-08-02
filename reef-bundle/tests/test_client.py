@@ -120,3 +120,4 @@ def test_retry_wait_grows_with_each_attempt():
         with patch("time.sleep") as mock_sleep:
             client.check_liveness()
             assert mock_sleep.call_args_list == [call(1.0), call(1.5)]
+            
