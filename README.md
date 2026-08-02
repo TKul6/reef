@@ -1,8 +1,8 @@
 <p align="center">
-    <img src="reef.png" alt="Reef Logo" height="400">
+    <img src="reef.png" alt="Reef Logo" height="360">
 </p>
 
-# Reef — Hot-Swap Airflow DAGs Without Restarting Airflow
+# Reef — Hot-Swap Airflow DAGs
 
 Reef is a solution for delivering DAG files to Airflow 3 over a REST API, so that shipping new DAGs no longer means
 restarting your Airflow environment.
