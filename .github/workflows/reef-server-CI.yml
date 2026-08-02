@@ -3,6 +3,9 @@ name: Reef server - CI
 on:
   pull_request:
     branches: [master]
+    paths:
+      - reef/
+
   workflow_dispatch:
 
 env:
