@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [master]
     paths:
-      - reef/**
+      - reef-server/**
 
   workflow_dispatch:
 
@@ -12,6 +12,12 @@ env:
   IMAGE_NAME: reef-server
   IMAGE_VERSION: beta-${{ github.event.pull_request.number }}
   PYTHON_VERSION: "3.12"
+
+# Every `run` step below executes inside the package directory, since the server is its own
+# Poetry project rather than part of the repository root.
+defaults:
+  run:
+    working-directory: reef-server
 
 jobs:
   build:
