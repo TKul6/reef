@@ -34,7 +34,7 @@ corresponding Docker image. Publishing the image to Docker Hub is deliberately l
 
 | Decision | Choice | Why |
 |---|---|---|
-| Release branch | `master` | Matches what `reef-server-CI.yml` and `reef-bundle-CI.yml` already target. Note the repository *default* branch is `main`, which forces an explicit `target-branch`. |
+| Release branch | `master` | The repository's only long-lived branch and its default (`origin/HEAD` → `refs/heads/master`), and what `reef-server-CI.yml` and `reef-bundle-CI.yml` already target. |
 | release-please mode | Manifest (`release-please-config.json` + `.release-please-manifest.json`) | The only mode that gives per-component versions and per-component tags, which goal 4 requires. |
 | Release type | `python` | Understands `[tool.poetry] version` in `pyproject.toml` and owns `CHANGELOG.md`. |
 | Workflow layout | One workflow, two jobs | One run tells the whole story of one release. A registry push later is a step inside the job that already holds the version and the image. |
@@ -138,8 +138,9 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-          # `target-branch` defaults to the repository default branch, which is `main` here.
-          # Without this, release-please would read main's history and open PRs against main.
+          # `target-branch` defaults to the repository default branch, which is already `master`.
+          # Pinned anyway so the release flow does not silently follow a future change of the
+          # default branch — it must read master's history and open pull requests against master.
           target-branch: master
           # A PAT, not GITHUB_TOKEN: a pull request authored by GITHUB_TOKEN triggers no
           # workflows, so the release PR would run neither reef-server-CI nor merge-gatekeeper.
