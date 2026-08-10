@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Superpowers / Claude Code working documents (design specs, implementation plans, journals).
+# Scratch thinking, not part of the project's documentation - docs/api.md stays tracked.
+docs/superpowers/
