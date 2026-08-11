@@ -192,7 +192,7 @@ def test_readiness_returns_healthy_when_ok(tmp_path):
 
     # Assert
     assert checks == {"healthy": True, "dags_exists": True, "dags_version_set": True}
-    logger_mock.error.assert_not_called()
+    logger_mock.fatal.assert_not_called()
 
 
 def test_readiness_returns_unhealthy_when_archive_not_found(tmp_path):
@@ -204,7 +204,7 @@ def test_readiness_returns_unhealthy_when_archive_not_found(tmp_path):
 
     # Assert
     assert checks == {"healthy": False, "dags_exists": False, "dags_version_set": False}
-    logger_mock.error.assert_called_once()
+    logger_mock.fatal.assert_called_once()
 
 
 def test_readiness_returns_unhealthy_when_bundle_version_unset(tmp_path):
@@ -217,4 +217,4 @@ def test_readiness_returns_unhealthy_when_bundle_version_unset(tmp_path):
 
     # Assert
     assert checks == {"healthy": False, "dags_exists": True, "dags_version_set": False}
-    logger_mock.error.assert_called_once()
+    logger_mock.fatal.assert_called_once()
