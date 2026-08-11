@@ -72,13 +72,13 @@ class ReefService:
         checks = {"healthy": True, "dags_exists": False, "dags_version_set": False}
 
         if not self._archive_path.is_file():
-            self._logger.error(f"Not ready - no bundle archive under '{self._archive_path.parent}'")
+            self._logger.fatal(f"Not ready - no bundle archive under '{self._archive_path.parent}'")
             checks["healthy"] = False
             return checks
         checks["dags_exists"] = True
 
         if not self._bundle_version:
-            self._logger.error("Not ready - bundle version is unset; provide it through the DAGS_VERSION environment variable")
+            self._logger.fatal("Not ready - bundle version is unset; provide it through the DAGS_VERSION environment variable.")
             checks["healthy"] = False
             return checks
         checks["dags_version_set"] = True
