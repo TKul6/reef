@@ -22,10 +22,10 @@ COPY dags_version.txt /dags/dags_version.txt
 
 ENV DAGS_DIR=/dags
 ENV DAGS_VERSION=1.2.0
-ENV REEF_SERVER_VERSION=<version>
 ```
 
-The base image already starts the server, so a child image does not need its own `CMD`.
+The base image already starts the server, so a child image does not need its own `CMD`. It carries its own
+`REEF_SERVER_VERSION` as well, baked in when the release built it — leave that one alone.
 
 ---
 
@@ -65,7 +65,7 @@ already set.
 |---|---|---|
 | `DAGS_DIR` | `/dags` | Directory holding `dags.tar.gz` (and optionally `dags_version.txt`) |
 | `DAGS_VERSION` | — | Version of the DAGs being served. Required; endpoints return `500` when unset |
-| `REEF_SERVER_VERSION` | — | Version of the Reef server itself, reported by `/api/v1/information` |
+| `REEF_SERVER_VERSION` | — | Version of the Reef server itself, reported by `/api/v1/information`. Already set in released images |
 
 ---
 
@@ -128,6 +128,26 @@ curl -s http://<reef-host>:8080/api/v1/dags/metadata
 
 Since a changed `signature` is exactly what makes `ReefDagBundle` re-download, this endpoint is the fastest way to tell
 whether a new image is serving different content than the one before it.
+
+---
+
+## Releasing
+
+Releases are cut by [release-please](https://github.com/googleapis/release-please), driven by the commits that land on
+`master`. Nobody edits a version by hand.
+
+1. Land a change on `master` with a [Conventional Commits](https://www.conventionalcommits.org/) message. `fix:` earns a
+   patch, `feat:` a minor, `feat!:` or a `BREAKING CHANGE:` footer a major. With squash merges the pull request title is
+   what gets parsed, so that is the line to get right.
+2. release-please opens a `chore(main): release reef-server X.Y.Z` pull request holding the bumped
+   `reef-server/pyproject.toml` and the new `reef-server/CHANGELOG.md` entries. It keeps that pull request up to date as
+   further commits land.
+3. Merging it publishes the GitHub release, tags the commit `reef-server-vX.Y.Z`, and builds and smoke-tests
+   `reef-server:X.Y.Z` with the version baked in. The image is discarded afterwards — nothing is pushed to a registry
+   yet.
+
+Only commits that touch `reef-server/` count towards the server's version, so `reef-bundle` can later be released on a
+version line of its own.
 
 ---
 

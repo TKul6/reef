@@ -37,6 +37,15 @@ Env vars that matter:
 - `DAGS_VERSION` — version of the DAGs being served (mandatory; without it the endpoints answer 500)
 - `REEF_SERVER_VERSION` — server version that `/api/v1/information` reports
 
+### Release
+Releases are cut by release-please off `master`; see the Releasing section of `reef-server/README.md`. Two rules follow
+from that:
+
+- **Write Conventional Commits** (`fix:`, `feat:`, `feat!:`/`BREAKING CHANGE:`) — the commit messages are the input the
+  version bump is computed from.
+- **Never hand-edit a version or a changelog.** `reef-server/pyproject.toml`'s `version`,
+  `reef-server/CHANGELOG.md`, and `.release-please-manifest.json` all belong to release-please.
+
 ## Purpose
 
 This project lets companies running Airflow on Kubernetes swap in new DAG files without restarting the Airflow

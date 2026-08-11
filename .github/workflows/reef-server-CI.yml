@@ -49,6 +49,7 @@ jobs:
         run: |
           docker build \
             --file Dockerfile \
+            --build-arg REEF_SERVER_VERSION="${IMAGE_VERSION}" \
             --tag "${IMAGE_NAME}:${IMAGE_VERSION}" \
             .
 

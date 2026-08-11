@@ -1,0 +1,101 @@
+name: Reef server - Release
+
+on:
+  push:
+    branches: [master]
+
+  workflow_dispatch:
+
+# No `paths:` filter on purpose: release-please's own release commit rewrites the root
+# .release-please-manifest.json, and a `reef-server/**` filter would hide that commit from this
+# workflow. A commit touching only reef-bundle still starts this workflow, finds nothing
+# releasable for reef-server, and exits.
+
+concurrency:
+  group: reef-server-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Cut the release
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    # Named per package rather than taken from the aggregate `releases_created`, so a future
+    # reef-bundle release cannot make the server image build below run.
+    outputs:
+      released: ${{ steps.release.outputs['reef-server--release_created'] }}
+      version: ${{ steps.release.outputs['reef-server--version'] }}
+      tag: ${{ steps.release.outputs['reef-server--tag_name'] }}
+
+    steps:
+      # On a normal commit this opens or refreshes the release pull request, which carries the
+      # pyproject.toml bump and the reef-server/CHANGELOG.md entries. Merging that pull request
+      # runs this workflow again, and the second run is the one that writes the GitHub release
+      # and the reef-server-vX.Y.Z tag.
+      - name: Run release-please
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # `target-branch` defaults to the repository default branch, which is already `master`.
+          # Pinned anyway so the release flow does not silently follow a future change of the
+          # default branch — it must read master's history and open pull requests against master.
+          target-branch: master
+          # A PAT, not GITHUB_TOKEN: a pull request authored by GITHUB_TOKEN triggers no
+          # workflows, so the release pull request would run neither reef-server-CI nor
+          # merge-gatekeeper.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+
+  build-image:
+    name: Build and smoke-test the release image
+    needs: release
+    if: needs.release.outputs.released == 'true'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: reef-server
+
+    env:
+      VERSION: ${{ needs.release.outputs.version }}
+      IMAGE: reef-server:${{ needs.release.outputs.version }}
+
+    steps:
+      # The triggering commit is the release commit — release-please tagged this exact SHA — so
+      # the default checkout already carries the bumped pyproject.toml.
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # The version is baked in, so the released image reports itself correctly with no
+      # REEF_SERVER_VERSION in the deployment.
+      - name: Build the release image
+        run: |
+          docker build \
+            --file Dockerfile \
+            --build-arg REEF_SERVER_VERSION="$VERSION" \
+            --tag "$IMAGE" \
+            .
+
+      # Proves the image starts and that the version really was baked in. DAGS_VERSION is
+      # supplied because /information reports it; /ready is deliberately not checked, since the
+      # base image holds no dags.tar.gz and answering 503 is the correct behaviour there.
+      - name: Smoke-test the image
+        run: |
+          docker run -d --name reef-smoke -e DAGS_VERSION=0.0.0-smoke -p 8080:8080 "$IMAGE"
+          for _ in $(seq 30); do curl -fsS localhost:8080/api/v1/health && break; sleep 1; done
+          curl -fsS localhost:8080/api/v1/health | grep -q '"healthy":true'
+          curl -fsS localhost:8080/api/v1/information | grep -q "\"serverVersion\":\"$VERSION\""
+
+      - name: Stop the container
+        if: always()
+        run: docker rm -f reef-smoke || true
+
+      - name: Report what was released
+        run: |
+          echo "Released ${{ needs.release.outputs.tag }} and built $IMAGE." >> "$GITHUB_STEP_SUMMARY"
+          echo "The image is not published; publishing to Docker Hub is a later change." >> "$GITHUB_STEP_SUMMARY"
