@@ -35,6 +35,15 @@ Env vars that matter:
 - `DAGS_VERSION` — version of the DAGs being served (mandatory; without it the endpoints answer 500)
 - `REEF_SERVER_VERSION` — server version that `/api/v1/information` reports
 
+### Release
+Releases are cut by release-please off `master`; see the Releasing section of `reef-server/README.md`. Two rules follow
+from that:
+
+- **Write Conventional Commits** (`fix:`, `feat:`, `feat!:`/`BREAKING CHANGE:`) — the commit messages are the input the
+  version bump is computed from.
+- **Never hand-edit a version or a changelog.** `reef-server/pyproject.toml`'s `version`,
+  `reef-server/CHANGELOG.md`, and `.release-please-manifest.json` all belong to release-please.
+
 ## Purpose
 
 This project lets companies running Airflow on Kubernetes swap in new DAG files without restarting the Airflow
@@ -49,6 +58,7 @@ Because the archive is baked into the image at build time and stays fixed at run
 a single time and cached for as long as the process lives.
 
 ### Key files
+<<<<<<< Updated upstream
 - `reef/app.py` — the FastAPI app; feeds env vars into the service and defines all 5 REST endpoints
 - `reef/service.py` — `ReefService`, where the logic lives; the endpoints only wrap it
 - `reef/errors.py` — `ReefServiceError`, which carries the HTTP status to respond with
@@ -56,6 +66,20 @@ a single time and cached for as long as the process lives.
 - `reef/server.py` — the Uvicorn entry point; picks up `REEF_HOST`/`REEF_PORT`
 - `pyproject.toml` — Poetry setup, dependencies, and Ruff rules (150-char lines, double quotes)
 - `Dockerfile` — assembles the image, runs `pytest` while building, and exposes port 8080
+=======
+- `reef-server/reef_server/app.py` — the FastAPI app; feeds env vars into the service and defines all 5 REST endpoints
+- `reef-server/reef_server/service.py` — `ReefService`, where the logic lives; the endpoints only wrap it
+- `reef-server/reef_server/errors.py` — `ReefServiceError`, which carries the HTTP status to respond with
+- `reef-server/reef_server/constants.py` — filenames, defaults, and the log format reused by the other modules
+- `reef-server/reef_server/server.py` — the Uvicorn entry point; picks up `REEF_HOST`/`REEF_PORT`
+- `reef-server/tests/` — the suite; a sibling of the package, as in `reef-bundle/`
+- `reef-server/pyproject.toml` — Poetry setup, dependencies, and Ruff rules (150-char lines, double quotes)
+- `reef-server/Dockerfile` — assembles the image and exposes port 8080; built with `reef-server/` as its context. Takes
+  a `REEF_SERVER_VERSION` build arg, with no default so an unsupplied version still fails loudly
+- `release-please-config.json` / `.release-please-manifest.json` — release-please in manifest mode, keyed by package
+  path; the manifest holds the current released version of each package
+- `.github/workflows/reef-server-release.yml` — the release flow: release-please, then the release image build
+>>>>>>> Stashed changes
 
 ### API Endpoints
 | Endpoint | Handler | Purpose |
