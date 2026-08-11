@@ -5,16 +5,16 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 
-from reef.constants import ARCHIVE_FILENAME, DEFAULT_BUNDLE_DIR, LOG_FORMAT, LOGGER_NAME
-from reef.errors import ReefServiceError
-from reef.service import ReefService
+from reef_server.constants import ARCHIVE_FILENAME, DEFAULT_BUNDLE_DIR, LOG_FORMAT, LOGGER_NAME
+from reef_server.errors import ReefServiceError
+from reef_server.service import ReefService
 
 
 def _configure_logging(min_level: int = logging.INFO) -> None:
     """
-    Attach Reef's handler to the `reef` package logger, leaving the root logger untouched.
+    Attach Reef's handler to the `reef_server` package logger, leaving the root logger untouched.
 
-    Every module under `reef` propagates up to this logger and stops there, so our lines keep
+    Every module under `reef_server` propagates up to this logger and stops there, so our lines keep
     their format whatever the host process did to root, and libraries logging at INFO do not
     leak into our output. The handler is added once, so re-importing this module is harmless.
     """

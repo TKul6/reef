@@ -23,5 +23,5 @@ DEFAULT_PORT = "8080"
 
 # Reef configures this logger rather than the root one, so a host process that has already
 # set up root logging cannot silently swallow our lines, and third-party loggers stay quiet.
-LOGGER_NAME = "reef"
+LOGGER_NAME = "reef_server"
 LOG_FORMAT = "[%(asctime)s] %(levelname)s - %(message)s"

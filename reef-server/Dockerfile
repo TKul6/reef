@@ -12,7 +12,7 @@ COPY poetry.lock ./
 RUN poetry install --no-root
 
 # 2. Copy source and install the package itself
-COPY reef ./reef/
+COPY reef_server ./reef_server/
 
 
 # Create a non-root user
@@ -30,4 +30,4 @@ ENV REEF_SERVER_VERSION=${REEF_SERVER_VERSION}
 EXPOSE 8080
 
 # CMD so child images that don't override it still start the server
-CMD ["python3",  "-m", "reef.server"]
+CMD ["python3",  "-m", "reef_server.server"]

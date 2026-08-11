@@ -4,16 +4,18 @@ Instructions for Claude Code (claude.ai/code) when working on this repository.
 
 ## Commands
 
+The server is its own Poetry project under `reef-server/`; run every command below from that directory.
+
 ### Install & Build
 ```bash
 poetry install                 # Install every dependency, dev ones included
-docker build -f Dockerfile .   # Build the Docker image (the tests run as part of the build)
+docker build -f Dockerfile .   # Build the Docker image
 ```
 
 ### Test
 ```bash
-poetry run pytest                          # Run the whole suite
-poetry run pytest reef/tests/test_file.py  # Run one test file
+poetry run pytest                     # Run the whole suite
+poetry run pytest tests/test_file.py  # Run one test file
 ```
 
 ### Lint & Format
@@ -25,7 +27,7 @@ ruff check    # Lint code
 ### Run Dev Server
 ```bash
 DAGS_VERSION=1.0.0 DAGS_DIR=./dags poetry run reef-server
-# Or: python -m reef.server
+# Or: python -m reef_server.server
 ```
 
 Env vars that matter:
@@ -58,15 +60,6 @@ Because the archive is baked into the image at build time and stays fixed at run
 a single time and cached for as long as the process lives.
 
 ### Key files
-<<<<<<< Updated upstream
-- `reef/app.py` — the FastAPI app; feeds env vars into the service and defines all 5 REST endpoints
-- `reef/service.py` — `ReefService`, where the logic lives; the endpoints only wrap it
-- `reef/errors.py` — `ReefServiceError`, which carries the HTTP status to respond with
-- `reef/constants.py` — filenames, defaults, and the log format reused by the other modules
-- `reef/server.py` — the Uvicorn entry point; picks up `REEF_HOST`/`REEF_PORT`
-- `pyproject.toml` — Poetry setup, dependencies, and Ruff rules (150-char lines, double quotes)
-- `Dockerfile` — assembles the image, runs `pytest` while building, and exposes port 8080
-=======
 - `reef-server/reef_server/app.py` — the FastAPI app; feeds env vars into the service and defines all 5 REST endpoints
 - `reef-server/reef_server/service.py` — `ReefService`, where the logic lives; the endpoints only wrap it
 - `reef-server/reef_server/errors.py` — `ReefServiceError`, which carries the HTTP status to respond with
@@ -74,12 +67,7 @@ a single time and cached for as long as the process lives.
 - `reef-server/reef_server/server.py` — the Uvicorn entry point; picks up `REEF_HOST`/`REEF_PORT`
 - `reef-server/tests/` — the suite; a sibling of the package, as in `reef-bundle/`
 - `reef-server/pyproject.toml` — Poetry setup, dependencies, and Ruff rules (150-char lines, double quotes)
-- `reef-server/Dockerfile` — assembles the image and exposes port 8080; built with `reef-server/` as its context. Takes
-  a `REEF_SERVER_VERSION` build arg, with no default so an unsupplied version still fails loudly
-- `release-please-config.json` / `.release-please-manifest.json` — release-please in manifest mode, keyed by package
-  path; the manifest holds the current released version of each package
-- `.github/workflows/reef-server-release.yml` — the release flow: release-please, then the release image build
->>>>>>> Stashed changes
+- `reef-server/Dockerfile` — assembles the image and exposes port 8080; built with `reef-server/` as its context
 
 ### API Endpoints
 | Endpoint | Handler | Purpose |

@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "reef"
+name = "reef-server"
 version = "1.0.0"
 description = "A lightweight API that serves Airflow DAG bundles on top of Rest API."
 authors = ["TKul6 <TKul6@github.com>"]
 readme = "README.md"
-packages = [{include = "reef"}]
+packages = [{include = "reef_server"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -17,11 +17,11 @@ pytest = "^8.0"
 httpx = ">=0.27"
 
 [tool.poetry.scripts]
-reef-server = "reef.server:main"
+reef-server = "reef_server.server:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-testpaths = ["reef/tests"]
+testpaths = ["tests"]
 
 [build-system]
 requires = ["poetry-core"]
