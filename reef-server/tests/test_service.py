@@ -3,9 +3,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from reef.constants import ARCHIVE_FILENAME, SIGNATURE_FILENAME
-from reef.errors import ReefServiceError
-from reef.service import ReefService
+from reef_server.constants import ARCHIVE_FILENAME, SIGNATURE_FILENAME
+from reef_server.errors import ReefServiceError
+from reef_server.service import ReefService
 
 BUNDLE_VERSION = "1.0.0"
 SERVER_VERSION = "1.0.0"

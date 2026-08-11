@@ -32,10 +32,10 @@ The solution has two halves:
 
 | Piece | Where it runs | What it does |
 |---|---|---|
-| **[Reef server](reef/README.md)** | Its own pod | Serves one versioned `dags.tar.gz` over a small REST API |
+| **[Reef server](reef-server/README.md)** | Its own pod | Serves one versioned `dags.tar.gz` over a small REST API |
 | **[Reef DAG bundle](reef-bundle/README.md)** | Inside Airflow | An Airflow DAG bundle that polls Reef and refreshes the local DAG directory |
 
-The server lives in [`reef/`](reef/README.md) and ships as a Docker image. The bundle lives in
+The server lives in [`reef-server/`](reef-server/README.md) and ships as a Docker image. The bundle lives in
 [`reef-bundle/`](reef-bundle/README.md) and installs as a Python package into your Airflow image.
 
 ---
@@ -104,7 +104,7 @@ sequenceDiagram
 ```
 
 The signature is decided at build time, which means you control what counts as a change — a CI build number and a git
-SHA are both good choices. See [Signatures](reef/README.md#signatures) for how Reef resolves it.
+SHA are both good choices. See [Signatures](reef-server/README.md#signatures) for how Reef resolves it.
 
 ---
 
@@ -118,7 +118,7 @@ interface (`BaseDagBundle`), so Airflow 2 is not supported.
 
 ## Further Reading
 
-- [Reef Server](reef/README.md) — building an image with your DAGs, configuration, running locally, and troubleshooting.
+- [Reef Server](reef-server/README.md) — building an image with your DAGs, configuration, running locally, and troubleshooting.
 - [Reef DAG Bundle](reef-bundle/README.md) — installing the bundle into Airflow, the `airflow.cfg` entry, and every
   parameter it takes.
 - [API Reference](docs/api.md) — the full specification for every Reef REST endpoint, covering response shapes, error

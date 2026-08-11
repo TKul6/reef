@@ -2,8 +2,8 @@ import hashlib
 from logging import Logger
 from pathlib import Path
 
-from reef.constants import ARCHIVE_FILENAME, CHECKSUM_CHUNK_BYTES, SIGNATURE_FILENAME, SIGNATURE_HEX_LENGTH
-from reef.errors import ReefServiceError
+from reef_server.constants import ARCHIVE_FILENAME, CHECKSUM_CHUNK_BYTES, SIGNATURE_FILENAME, SIGNATURE_HEX_LENGTH
+from reef_server.errors import ReefServiceError
 
 
 class ReefService:
