@@ -17,10 +17,6 @@ on:
 
   workflow_dispatch:
 
-# No `paths:` filter on purpose: release-please's own release commit rewrites the root
-# .release-please-manifest.json, and a per-package filter would hide that commit from this
-# workflow.
-
 concurrency:
   group: release
   cancel-in-progress: false
@@ -35,14 +31,6 @@ jobs:
       pull-requests: write
 
     steps:
-      # On a normal commit this opens or refreshes a release pull request per package, each
-      # carrying that package's pyproject.toml bump and CHANGELOG.md entries. Merging one runs
-      # this workflow again, and the second run is what writes the GitHub release and the
-      # <component>-vX.Y.Z tag.
-      #
-      # Versions stay independent because release-please attributes a commit to a package by the
-      # files it touches: a commit under reef-server/ moves only reef-server's version line, and
-      # `separate-pull-requests` keeps the release pull requests from being merged into one.
       - name: Run release-please
         uses: googleapis/release-please-action@v4
         id: release
