@@ -1,75 +1,47 @@
 name: Reef server - Release
 
+# Triggered by the tag release.yml pushes, not by a commit on master. Everything this workflow
+# needs is carried by the tag itself: the ref is the release commit, so the checkout already has
+# the bumped pyproject.toml, and the tag name holds the version. Nothing is threaded in from the
+# release job.
+#
+# This only fires because release-please pushes the tag with a PAT — see the token comment in
+# release.yml.
+
 on:
   push:
-    branches: [master]
-
-  workflow_dispatch:
-
-# No `paths:` filter on purpose: release-please's own release commit rewrites the root
-# .release-please-manifest.json, and a `reef-server/**` filter would hide that commit from this
-# workflow. A commit touching only reef-bundle still starts this workflow, finds nothing
-# releasable for reef-server, and exits.
+    tags:
+      - reef-server-v*
 
 concurrency:
-  group: reef-server-release
+  group: reef-server-release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Cut the release
+  build-image:
+    name: Build and smoke-test the release image
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write
-      pull-requests: write
-
-    # Named per package rather than taken from the aggregate `releases_created`, so a future
-    # reef-bundle release cannot make the server image build below run.
-    outputs:
-      released: ${{ steps.release.outputs['reef-server--release_created'] }}
-      version: ${{ steps.release.outputs['reef-server--version'] }}
-      tag: ${{ steps.release.outputs['reef-server--tag_name'] }}
-
-    steps:
-      # On a normal commit this opens or refreshes the release pull request, which carries the
-      # pyproject.toml bump and the reef-server/CHANGELOG.md entries. Merging that pull request
-      # runs this workflow again, and the second run is the one that writes the GitHub release
-      # and the reef-server-vX.Y.Z tag.
-      - name: Run release-please
-        uses: googleapis/release-please-action@v4
-        id: release
-        with:
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
-          # `target-branch` defaults to the repository default branch, which is already `master`.
-          # Pinned anyway so the release flow does not silently follow a future change of the
-          # default branch — it must read master's history and open pull requests against master.
-          target-branch: master
-          # A PAT, not GITHUB_TOKEN: a pull request authored by GITHUB_TOKEN triggers no
-          # workflows, so the release pull request would run neither reef-server-CI nor
-          # merge-gatekeeper.
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-
-  build-image:
-    name: Build and smoke-test the release image
-    needs: release
-    if: needs.release.outputs.released == 'true'
-    runs-on: ubuntu-latest
+      contents: read
 
     defaults:
       run:
         working-directory: reef-server
 
-    env:
-      VERSION: ${{ needs.release.outputs.version }}
-      IMAGE: reef-server:${{ needs.release.outputs.version }}
-
     steps:
-      # The triggering commit is the release commit — release-please tagged this exact SHA — so
-      # the default checkout already carries the bumped pyproject.toml.
+      # A tag push checks out the tagged commit, which is the release commit release-please
+      # tagged — so pyproject.toml here is already the released version.
       - name: Check out the repository
         uses: actions/checkout@v4
+
+      # reef-server-v1.2.3 -> 1.2.3. The tag is the single source of the version; there is no
+      # output plumbing to keep in sync.
+      - name: Derive the version from the tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#reef-server-v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "IMAGE=reef-server:$VERSION" >> "$GITHUB_ENV"
 
       # The version is baked in, so the released image reports itself correctly with no
       # REEF_SERVER_VERSION in the deployment.
@@ -97,5 +69,5 @@ jobs:
 
       - name: Report what was released
         run: |
-          echo "Released ${{ needs.release.outputs.tag }} and built $IMAGE." >> "$GITHUB_STEP_SUMMARY"
-          echo "The image is not published; publishing to Docker Hub is a later change." >> "$GITHUB_STEP_SUMMARY"
+          echo "Released $GITHUB_REF_NAME and built $IMAGE." >> "$GITHUB_STEP_SUMMARY"
+        

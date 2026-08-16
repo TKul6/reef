@@ -1,0 +1,50 @@
+name: Reef - Release
+
+# The single place release-please runs. It is repository-wide on purpose: the action reads the
+# whole manifest on every run and has no per-package filter, so invoking it from a second
+# workflow would not release "just that package" — it would repeat this identical full pass,
+# concurrently, against the same .release-please-manifest.json.
+#
+# What a package release actually consists of therefore lives elsewhere: this workflow only
+# bumps versions, writes changelogs, publishes GitHub releases and pushes tags. Each package
+# reacts to its own tag from its own workflow (reef-server-release.yml, and one per package
+# added later). Adding a package touches this file not at all — only release-please-config.json
+# and .release-please-manifest.json.
+
+on:
+  push:
+    branches: [master]
+
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Cut the releases
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Run release-please
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # `target-branch` defaults to the repository default branch, which is already `master`.
+          # Pinned anyway so the release flow does not silently follow a future change of the
+          # default branch — it must read master's history and open pull requests against master.
+          target-branch: master
+          # A PAT, not GITHUB_TOKEN, and this now matters twice over:
+          #  - a pull request authored by GITHUB_TOKEN triggers no workflows, so the release pull
+          #    request would run neither reef-server-CI nor merge-gatekeeper;
+          #  - a tag pushed by GITHUB_TOKEN triggers no workflows either, so every per-package
+          #    release workflow would silently never fire. That failure is invisible: this
+          #    workflow still goes green and the tag still exists. Do not swap this token.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
