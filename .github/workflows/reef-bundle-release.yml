@@ -1,0 +1,66 @@
+name: Reef bundle - Release
+
+on:
+  push:
+    tags:
+      - reef-bundle-v*
+
+concurrency:
+  group: reef-bundle-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: "3.12"
+
+defaults:
+  run:
+    working-directory: reef-bundle
+
+jobs:
+  build:
+    name: Build reef bundle
+    runs-on: ubuntu-latest
+
+    # Read-only: cutting the release is release.yml's job, this one only builds.
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # reef-bundle-v1.2.3 -> 1.2.3. Only used to check the build below, since unlike the server
+      # image the version is not injected — poetry reads it from pyproject.toml.
+      - name: Derive the version from the tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#reef-bundle-v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      # The runner is not assumed to ship with a usable Python, so install one explicitly.
+      - name: Install Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: pip install --no-cache-dir poetry
+
+      # No `poetry install` first: the build backend does not need the dependency tree, and the
+      # tests already ran on the pull request.
+      - name: Build the package
+        run: poetry build
+
+      # The tag and pyproject.toml are two independent sources of the version, and poetry build
+      # reads only the second — so nothing else here would notice them disagreeing. Wheel names
+      # normalise reef-bundle to reef_bundle.
+      - name: Check the build matches the tag
+        run: |
+          test -f "dist/reef_bundle-$VERSION-py3-none-any.whl"
+          test -f "dist/reef_bundle-$VERSION.tar.gz"
+
+      - name: List the built artifacts
+        run: ls -l dist
+
+      # TODO upload the package.
+      - name: Report what was released
+        run: echo "Released $GITHUB_REF_NAME and built reef-bundle $VERSION." >> "$GITHUB_STEP_SUMMARY"

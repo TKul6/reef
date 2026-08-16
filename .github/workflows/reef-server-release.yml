@@ -22,7 +22,6 @@ jobs:
     name: Build and smoke-test the release image
     runs-on: ubuntu-latest
 
-    # Read-only: cutting the release is release.yml's job, this one only builds.
     permissions:
       contents: read
 

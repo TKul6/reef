@@ -8,6 +8,13 @@
       "package-name": "reef-server",
       "changelog-path": "CHANGELOG.md",
       "include-component-in-tag": true
+    },
+    "reef-bundle": {
+      "release-type": "python",
+      "component": "reef-bundle",
+      "package-name": "reef-bundle",
+      "changelog-path": "CHANGELOG.md",
+      "include-component-in-tag": true
     }
   }
 }
