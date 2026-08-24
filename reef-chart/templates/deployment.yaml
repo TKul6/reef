@@ -1,0 +1,99 @@
+{{/*
+Both halves of the image are required: it is yours, built FROM reef-server with your DAGs baked in,
+so there is nothing sensible to fall back to. Resolved up here so the failure names the value.
+*/}}
+{{- $repository := required "reef-server: set image.repository — your own image, built FROM reef-server with your DAGs baked in." .Values.image.repository -}}
+{{- $tag := required "reef-server: set image.tag — the tag of that image, quoted so 1.0 does not become 1." .Values.image.tag -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "reef-server.fullname" . }}
+  labels:
+    {{- include "reef-server.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "reef-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "reef-server.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "reef-server.serviceAccountName" . }}
+      # Set here as well as on the ServiceAccount, because the two cover different holes: that one
+      # covers every use of the account we create, this one covers this pod whichever account it
+      # ends up with — including one you brought yourself that does automount.
+      automountServiceAccountToken: false
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ $repository }}:{{ $tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            # The server reads REEF_PORT itself, so one value keeps the container port, the Service
+            # and the listening process in agreement.
+            - name: REEF_PORT
+              value: {{ .Values.service.port | quote }}
+            {{- with .Values.dagsVersion }}
+            # Emitted only when overridden, so an image that baked in its own DAGS_VERSION keeps it.
+            - name: DAGS_VERSION
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.dagsDir }}
+            - name: DAGS_DIR
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          # 503 until the archive is in place and the version is known, so a pod built without DAGs
+          # never joins the Service.
+          readinessProbe:
+            httpGet:
+              path: /api/v1/ready
+              port: http
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,95 @@
+# Every value set at once, so a typo in a branch the minimal render never reaches still fails CI:
+# the conditional env vars, pull secrets, scheduling fields, name overrides, and an externally
+# managed service account.
+image:
+  repository: example.registry.internal/my-dags
+  tag: "1.4.2"
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: my-registry-credentials
+
+replicaCount: 3
+
+service:
+  port: 9090
+
+dagsVersion: "1.4.2"
+dagsDir: /opt/airflow/dags-bundle
+
+extraEnv:
+  - name: REEF_HOST
+    value: 0.0.0.0
+  - name: EXAMPLE_FROM_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: my-secret
+        key: token
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+livenessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  timeoutSeconds: 3
+  failureThreshold: 5
+
+readinessProbe:
+  initialDelaySeconds: 2
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 2
+
+# runAsUser is overridden away from the chart's 1000, standing in for an image built on a different
+# base — the case the default is documented for.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  fsGroup: 65532
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+serviceAccount:
+  create: false
+  name: my-existing-account
+  annotations:
+    example.com/owner: data-platform
+
+nameOverride: reef
+fullnameOverride: reef-dags
+
+podAnnotations:
+  prometheus.io/scrape: "false"
+
+podLabels:
+  team: data-platform
+
+nodeSelector:
+  kubernetes.io/os: linux
+
+tolerations:
+  - key: dedicated
+    operator: Equal
+    value: airflow
+    effect: NoSchedule
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          topologyKey: kubernetes.io/hostname
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: reef

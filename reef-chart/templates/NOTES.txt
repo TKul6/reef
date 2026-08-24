@@ -1,0 +1,21 @@
+reef-server is installed as release {{ .Release.Name }}, serving {{ .Values.image.repository }}:{{ .Values.image.tag }} from {{ .Values.replicaCount }} pod(s).
+
+This is the address to point Airflow's reef-bundle at:
+
+    http://{{ include "reef-server.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+
+The Service is ClusterIP, so by design nothing routes in from outside the cluster. To reach it from
+your own machine, forward the port yourself:
+
+    kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "reef-server.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+
+Then check what the pods are actually serving:
+
+    curl -fsS localhost:{{ .Values.service.port }}/api/v1/information
+    curl -fsS localhost:{{ .Values.service.port }}/api/v1/dags/metadata
+{{ if not .Values.dagsVersion }}
+Note: dagsVersion is unset, so it has to be baked into your image as `ENV DAGS_VERSION`. Without it
+every /api/v1/dags endpoint answers 500 and the pods never pass their readiness probe. Check with:
+
+    kubectl --namespace {{ .Release.Namespace }} get pods --selector app.kubernetes.io/instance={{ .Release.Name }}
+{{- end }}

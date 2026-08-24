@@ -1,0 +1,94 @@
+# Reef is deployed from an image you build yourself: `FROM reef-server`, with your DAGs baked in as
+# dags.tar.gz. There is deliberately no default here — repository and tag are both required, and
+# rendering fails without them rather than falling back to a floating or wrong image.
+image:
+  repository: ""
+  # Always quote the tag. Unquoted, a tag like 1.0 is a YAML float and reaches the cluster as "1".
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# Names of existing docker-registry secrets, for an image held in a private registry.
+imagePullSecrets: []
+
+# Reef only ever reads a file baked into its own image, so replicas share no state and coordinate
+# on nothing: this is purely how many pods keep answering when one goes away.
+replicaCount: 1
+
+service:
+  # The one port value. It becomes the Service port, the container port, and the server's own
+  # REEF_PORT — so moving it moves the whole chain at once, rather than half of it.
+  port: 8080
+
+# The DAGs version reported by /api/v1/information and /api/v1/dags/metadata. Normally left empty:
+# the version travels with the image, baked in as `ENV DAGS_VERSION` at build time, the same way the
+# server's own version is. Set it here only to override what the image says.
+dagsVersion: ""
+
+# Directory holding dags.tar.gz inside the image. Empty means the server's own default, /dags.
+dagsDir: ""
+
+# Extra environment variables, in full Kubernetes form — name/value, or name/valueFrom.
+extraEnv: []
+
+# Streaming a pre-built archive is cheap, and these are sized for that rather than left unbounded.
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# The probe endpoints themselves are not configurable: they are part of the server's API, not of a
+# deployment. Only the timings below are.
+livenessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+# Readiness answers 503 until the archive is in place and the version is known, so a misbuilt image
+# never receives traffic. Failing it restarts nothing — unlike liveness, it only withholds traffic.
+readinessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+# runAsUser is numeric on purpose, and the two belong together: given `runAsNonRoot` alone, the
+# kubelet has to verify the image's user is not root, cannot do that when the image names its user
+# instead of numbering it, and fails the container with CreateContainerConfigError rather than
+# guess. The reef-server image is built as 1000:1000 to match. If your image uses a different user,
+# override this — or set runAsUser to null and make sure your image's USER is numeric.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# readOnlyRootFilesystem is a safe default because the server only ever reads from disk — verified
+# by running the image with `docker run --read-only`. (Python simply skips writing __pycache__ when
+# it cannot, which costs nothing at runtime.) Set it false if your own image needs to write.
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+serviceAccount:
+  # Reef calls no Kubernetes API, so the account it gets exists only to avoid sharing `default`.
+  create: true
+  # Used when `create` is false, to attach an account you manage yourself.
+  name: ""
+  annotations: {}
+
+# Override the names resources are built from. Left empty, they derive from the release and the
+# chart, e.g. release `dags` becomes `dags-reef-server`.
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+podLabels: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

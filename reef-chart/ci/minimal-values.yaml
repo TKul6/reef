@@ -1,0 +1,5 @@
+# The smallest install that renders at all: the two required image fields and nothing else, so this
+# file also proves what the chart's defaults produce on their own.
+image:
+  repository: example.registry.internal/my-dags
+  tag: "1.4.2"
