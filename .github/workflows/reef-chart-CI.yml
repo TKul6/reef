@@ -1,0 +1,63 @@
+name: Reef chart - CI
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - reef-chart/**
+
+  workflow_dispatch:
+
+env:
+  HELM_VERSION: "v3.16.2"
+
+# Every `run` step below executes inside the chart directory, since the chart is its own package
+# rather than part of the server or the bundle.
+defaults:
+  run:
+    working-directory: reef-chart
+
+jobs:
+  build:
+    name: Lint, render and package the chart
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # Pinned rather than left floating: `latest` resolves through the GitHub API on every run, and
+      # a new Helm release must not be able to break a pull request on its own.
+      - name: Install Helm ${{ env.HELM_VERSION }}
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      # Values are passed on purpose: image.repository and image.tag are `required`, so linting bare
+      # would fail by design rather than tell us anything about the chart.
+      - name: Lint the chart
+        run: helm lint . --values ci/minimal-values.yaml
+
+      - name: Render the smallest install
+        run: helm template reef-server . --values ci/minimal-values.yaml
+
+      # Covers the branches the minimal render never reaches — conditional env vars, pull secrets,
+      # scheduling fields, an externally managed service account.
+      - name: Render with every value set
+        run: helm template reef-server . --values ci/full-values.yaml
+
+      # The chart deliberately has no default image, and that guard is the only reason a bad install
+      # fails immediately instead of as an ImagePullBackOff. Assert it is still in place.
+      - name: Check the chart refuses to render without an image
+        run: |
+          if helm template reef-server . > /dev/null 2>&1; then
+            echo "The chart rendered with no image set — the guard on image.repository is gone." >&2
+            exit 1
+          fi
+
+      # Packaging only. Publishing is a release decision, not something a pull request should do.
+      - name: Package the chart
+        run: helm package . --destination dist
+
+      - name: List the built artifact
+        run: ls -l dist

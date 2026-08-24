@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "reef-server.fullname" . }}
+  labels:
+    {{- include "reef-server.labels" . | nindent 4 }}
+spec:
+  # ClusterIP, and deliberately not a value: Reef hands out your DAGs, so it is reachable from
+  # inside the cluster only. Reach it from a laptop with `kubectl port-forward` — see NOTES.txt.
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+  selector:
+    {{- include "reef-server.selectorLabels" . | nindent 4 }}

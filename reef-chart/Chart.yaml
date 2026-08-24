@@ -1,0 +1,19 @@
+apiVersion: v2
+name: reef-server
+description: Serves versioned Airflow DAG bundles, so DAGs can be swapped without restarting Airflow.
+type: application
+keywords:
+  - reef
+  - airflow 3
+  - dags
+  - dag-bundle
+  - reef-server
+
+# The chart's own version, bumped per chart change and independent of the server's.
+version: 0.1.0
+
+# The reef-server version this chart is written against — not necessarily the one that runs. The
+# image is built by whoever installs the chart (see values.yaml), so this records which base image
+# the templates assume: its endpoints, its env vars, its non-root user. Bump it by hand when the
+# chart starts relying on something newer.
+appVersion: "1.0.1"

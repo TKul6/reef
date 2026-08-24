@@ -1,0 +1,15 @@
+# Patterns to leave out of the packaged chart.
+.DS_Store
+.git/
+.gitignore
+.idea/
+.vscode/
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+
+# CI-only value sets and local packaging output — neither belongs in the .tgz.
+ci/
+dist/
