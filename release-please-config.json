@@ -15,6 +15,14 @@
       "package-name": "reef-bundle",
       "changelog-path": "CHANGELOG.md",
       "include-component-in-tag": true
+    },
+    "reef-chart": {
+      "release-type": "helm",
+      "component": "reef-chart",
+      "package-name": "reef-chart",
+      "changelog-path": "CHANGELOG.md",
+      "include-component-in-tag": true
     }
   }
 }
+    

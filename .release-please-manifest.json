@@ -1,4 +1,5 @@
 {
   "reef-server": "1.0.1",
-  "reef-bundle": "1.0.0"
+  "reef-bundle": "1.0.0",
+  "reef-chart": "0.1.0"
 }
