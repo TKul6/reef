@@ -1,0 +1,79 @@
+name: PR Title Lint
+
+# release-please derives each package's version bump from Conventional Commit messages, and since
+# every PR here is squash-merged, the PR title becomes that commit message. A malformed title is
+# therefore not a style nitpick — it is a commit release-please cannot parse. Catch it here rather
+# than at release time.
+
+on:
+  # pull_request_target (not pull_request) so the sticky comment can be posted even on a PR from a
+  # fork, where the plain pull_request token is read-only. Safe here: nothing in this workflow
+  # checks out the PR's code, it only reads the title through the GitHub API.
+  pull_request_target:
+    types: [opened, edited, reopened]
+    branches: [master]
+
+jobs:
+  lint-pr-title:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Lint PR title against Conventional Commits
+        uses: amannn/action-semantic-pull-request@v6
+        id: lint_pr_title
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            chore
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            revert
+          requireScope: false
+
+      - name: Post sticky comment explaining the required format
+        if: failure()
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: pr-title-lint
+          message: |
+            ### PR title doesn't match the format release-please expects
+
+            This repo squash-merges pull requests, so the PR title becomes the commit message
+            release-please parses. It must follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+            ```
+            <type>[!]: <description>
+            ```
+
+            **Available types:** `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `revert`
+
+            Only `feat` and `fix` bump a package's version. Add a `!` right after the type (or a
+            `BREAKING CHANGE:` footer in the PR description) for a major bump. See this repo's
+            `CLAUDE.md` for the full release convention.
+
+            **Example:**
+            ```
+            feat: add readiness probe timeout override
+            ```
+
+            **Why this title failed:**
+            ${{ steps.lint_pr_title.outputs.error_message }}
+
+      - name: Remove stale comment once the title is fixed
+        if: success()
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: pr-title-lint
+          delete: true
