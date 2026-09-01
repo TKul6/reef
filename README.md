@@ -28,15 +28,18 @@ Reef decouples the two. Your DAGs travel in their own small artifact, served ove
 it keeps running. Shipping DAGs becomes a Reef deployment instead of an Airflow restart — the scheduler, the workers,
 and every running task stay up.
 
-The solution has two halves:
+The solution has 3 main parts:
 
 | Piece | Where it runs | What it does |
 |---|---|---|
 | **[Reef server](reef-server/README.md)** | Its own pod | Serves one versioned `dags.tar.gz` over a small REST API |
 | **[Reef DAG bundle](reef-bundle/README.md)** | Inside Airflow | An Airflow DAG bundle that polls Reef and refreshes the local DAG directory |
+| **[Reef chart](reef-chart/README.md)** | A helm chart to deploy the reef-server on your Kubernetes cluster. |
 
 The server lives in [`reef-server/`](reef-server/README.md) and ships as a Docker image. The bundle lives in
-[`reef-bundle/`](reef-bundle/README.md) and installs as a Python package into your Airflow image.
+[`reef-bundle/`](reef-bundle/README.md) and installs as a Python package into your Airflow image. The chart lives in
+[`reef-chart/`](reef-chart/README.md) and installs the server from an image you build yourself — it deliberately has no
+default image, because which DAGs get served is decided by that image.
 
 ---
 
@@ -70,7 +73,7 @@ flowchart LR
         bundle -.->|"polls + downloads over HTTP"| reef
     end
 
-    image ==>|"deploy"| reef
+    image ==>|"deploy with the Helm chart"| reef
 ```
 
 Because the archive is baked into the image at build time, a Reef server pod is fully self-contained: no shared volume, no
@@ -121,5 +124,7 @@ interface (`BaseDagBundle`), so Airflow 2 is not supported.
 - [Reef Server](reef-server/README.md) — building an image with your DAGs, configuration, running locally, and troubleshooting.
 - [Reef DAG Bundle](reef-bundle/README.md) — installing the bundle into Airflow, the `airflow.cfg` entry, and every
   parameter it takes.
+- [Reef Chart](reef-chart/README.md) — installing the server on Kubernetes with Helm, every value the chart takes, and
+  how to reach Reef from inside the cluster.
 - [API Reference](docs/api.md) — the full specification for every Reef REST endpoint, covering response shapes, error
   codes, and field descriptions.
