@@ -6,10 +6,7 @@ name: PR Title Lint
 # than at release time.
 
 on:
-  # pull_request_target (not pull_request) so the sticky comment can be posted even on a PR from a
-  # fork, where the plain pull_request token is read-only. Safe here: nothing in this workflow
-  # checks out the PR's code, it only reads the title through the GitHub API.
-  pull_request_target:
+   pull_request:
     types: [opened, edited, reopened]
     branches: [master]
 
@@ -44,6 +41,10 @@ jobs:
 
       - name: Post sticky comment explaining the required format
         if: failure()
+        # GITHUB_TOKEN is forced read-only on a pull_request run whose head branch is a fork, so
+        # posting would 403 there. Don't let that turn into a second, unrelated failed check — the
+        # lint step above is what actually has to fail the PR.
+        continue-on-error: true
         uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: pr-title-lint
@@ -73,6 +74,7 @@ jobs:
 
       - name: Remove stale comment once the title is fixed
         if: success()
+        continue-on-error: true
         uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: pr-title-lint
