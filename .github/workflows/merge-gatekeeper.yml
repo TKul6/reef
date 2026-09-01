@@ -3,8 +3,8 @@ name: Merge Gatekeeper
 
 on:
   pull_request:
+   types: [opened, edited, reopened, synchronize]
     branches:
-      - main
       - master
 
 jobs:

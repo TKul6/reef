@@ -6,7 +6,7 @@ name: PR Title Lint
 # than at release time.
 
 on:
-   pull_request:
+  pull_request:
     types: [opened, edited, reopened]
     branches: [master]
 
