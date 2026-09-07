@@ -1,0 +1,78 @@
+name: Reef action - CI
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - .github/actions/add-dags-version/**
+
+  workflow_dispatch:
+
+jobs:
+  existing-directory:
+    name: Run the action and verify its output
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # The action's own first step is refusing to run against a directory that doesn't exist, so
+      # the directory here has to exist - but nothing requires it to hold any DAGs yet.
+      - name: Create an empty DAGs directory
+        run: mkdir -p test-dags
+
+      - name: Run the action
+        uses: ./.github/actions/add-dags-version
+        with:
+          dags_location: test-dags
+
+      - name: Verify dags_version.txt was written with the expected content
+        run: |
+          expected="${{ github.run_id }}-${{ github.run_attempt }}"
+          file="test-dags/dags_version.txt"
+
+          if [ ! -f "$file" ]; then
+            echo "::error::$file was not created" >&2
+            exit 1
+          fi
+
+          actual=$(cat "$file")
+          if [ "$actual" != "$expected" ]; then
+            echo "The contant of the `dags_version.txt` file is different than expected"
+            echo "::error::$file contains '$actual', expected '$expected'" >&2
+            exit 1
+          fi
+
+          echo "$file contains the expected value: $actual"
+
+  missing-directory:
+    name: Verify the action fails against a missing directory
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # continue-on-error keeps this job alive past the expected failure, so the next step can
+      # assert on it instead of the job just stopping here.
+      - name: Run the action against a directory that does not exist
+        id: run_action
+        continue-on-error: true
+        uses: ./.github/actions/add-dags-version
+        with:
+          dags_location: no-such-directory
+
+      - name: Verify the action failed instead of creating anything
+        run: |
+          if [ "${{ steps.run_action.outcome }}" != "failure" ]; then
+            echo "::error::Expected the action to fail against a missing directory, but it reported '${{ steps.run_action.outcome }}'" >&2
+            exit 1
+          fi
+
+          if [ -e no-such-directory ]; then
+            echo "::error::no-such-directory should not exist - the action must not create it" >&2
+            exit 1
+          fi
+
+          echo "Action correctly failed against a missing DAGs directory."

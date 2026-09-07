@@ -1,0 +1,32 @@
+name: DAGs version provider
+description: >-
+  Writes a dags_version.txt file, unique to this workflow run, into a DAGs directory. Reef reads
+  that file as the bundle's signature (see reef-server/README.md, "Signatures"), so run this before
+  building your Docker image, after checking out the repository that holds your DAGs.
+
+inputs:
+  dags_location:
+    description: >-
+      Path to the directory holding your DAGs, relative to the repository root (e.g. "dags"). It
+      must already exist - check out your repository (actions/checkout) before this step.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Verify the DAGs directory exists
+      shell: bash
+      run: |
+        if [ ! -d "${{ inputs.dags_location }}" ]; then
+          echo "::error::DAGs directory '${{ inputs.dags_location }}' does not exist. Checkout the repository that holds your DAGs (actions/checkout) before this step." >&2
+          exit 1
+        fi
+
+    - name: Write a unique dags_version.txt
+      shell: bash
+      # run_id is unique across every run of every workflow in the repository; run_attempt
+      # increments on a re-run, so a re-run still produces a signature no earlier attempt used.
+      run: |
+        version="${{ github.run_id }}-${{ github.run_attempt }}"
+        echo "$version" > "${{ inputs.dags_location }}/dags_version.txt"
+        echo "DAGs version: $version"
