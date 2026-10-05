@@ -20,7 +20,13 @@ already provides it.
 
 ## Install
 
-TBD
+Install the following package when creating your airflow image:
+
+```bash
+
+pip install reef-bundle
+
+```
 ---
 
 ## Configure
