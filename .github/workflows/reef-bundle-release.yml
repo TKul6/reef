@@ -17,13 +17,16 @@ defaults:
     working-directory: reef-bundle
 
 jobs:
-  build:
-    name: Build reef bundle
+  build-and-publish:
+    name: Build and publish reef bundle
     runs-on: ubuntu-latest
 
-    # Read-only: cutting the release is release.yml's job, this one only builds.
+    # Cutting the release is release.yml's job; this one builds the tagged commit and uploads it.
+    # id-token is what trusted publishing exchanges for a short-lived upload token — without it the
+    # publish step cannot mint one at all.
     permissions:
       contents: read
+      id-token: write
 
     steps:
       - name: Check out the repository
@@ -61,6 +64,13 @@ jobs:
       - name: List the built artifacts
         run: ls -l dist
 
-      # TODO upload the package.
+      - name: Publish reef-bundle
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # A container action, so `defaults.run.working-directory` above does not reach it and
+          # the path has to be given from the repository root. No repository-url: the action
+          # already defaults to PyPI.
+          packages-dir: reef-bundle/dist
+
       - name: Report what was released
         run: echo "Released $GITHUB_REF_NAME and built reef-bundle $VERSION." >> "$GITHUB_STEP_SUMMARY"
