@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "reef-bundle"
-version = "1.0.0"
+version = "1.0.1"
 description = "Airflow DAG bundle that fetches versioned DAGs from a Reef server."
 authors = ["TKul6 <TKul6@github.com>"]
 readme = "README.md"
