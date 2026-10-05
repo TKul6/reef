@@ -1,0 +1,92 @@
+name: Reef bundle - Publish pre-release
+
+# Manual on purpose. A pre-release is something you decide to cut, not something a push or a pull
+# request should produce — and every dispatch publishes, which is not a thing to trigger by accident.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Package index to publish the beta to
+        type: choice
+        required: true
+        default: testpypi
+        options:
+          - testpypi
+          - pypi
+
+# Two dispatches at once would race on nothing in particular, but they would publish two betas from
+# two commits with no ordering between them. Serialise instead of cancelling: a run that has already
+# uploaded must not be killed half way.
+concurrency:
+  group: reef-bundle-publish-pre-release
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: "3.12"
+
+# Every `run` step below executes inside the package directory, since the bundle is its own
+# Poetry project rather than part of the server at the repository root.
+defaults:
+  run:
+    working-directory: reef-bundle
+
+jobs:
+  publish:
+    name: Build and publish a beta of reef-bundle
+    runs-on: ubuntu-latest
+
+    # Trusted publishing exchanges an OIDC claim for a short-lived upload token, so the job has to be
+    # allowed to request one. Naming any permission drops every other scope to none, hence the
+    # explicit contents: read for the checkout.
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # The runner is not assumed to ship with a usable Python, so install one explicitly.
+      - name: Install Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: pip install --no-cache-dir poetry
+
+      # pyproject.toml supplies the base version and the run number makes each dispatch unique:
+      # 1.0.0 becomes 1.0.0b103. PEP 440 sorts a beta before its own release, so 1.0.0b103 is a
+      # preview of 1.0.0 rather than something newer than it, and pip ignores it without --pre.
+      #
+      # The rewrite lives and dies on the runner. Nothing is committed, so master still reads 1.0.0
+      # and the version field stays release-please's alone.
+      - name: Stamp the beta version
+        run: |
+          VERSION="$(poetry version --short)b${{ github.run_number }}"
+          poetry version "$VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      # No `poetry install` first: the build backend does not need the dependency tree, and this
+      # workflow deliberately runs no tests — reef-bundle-CI.yml is where the suite runs.
+      - name: Build the package
+        run: poetry build
+
+      - name: List the built artifacts
+        run: ls -l dist
+
+      # One step rather than one per index: only the upload URL differs, and a single step cannot
+      # drift into publishing to one registry with the other's settings.
+      #
+      # No skip-existing: the run number already makes every upload unique, so a version that is
+      # somehow already there means something is wrong and should fail loudly.
+      - name: Publish reef-bundle ${{ env.VERSION }} to ${{ inputs.target }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+          # A container action, so `defaults.run.working-directory` above does not reach it and the
+          # path has to be given from the repository root.
+          packages-dir: reef-bundle/dist
+
+      - name: Report what was published
+        run: echo "Published reef-bundle $VERSION to ${{ inputs.target }}." >> "$GITHUB_STEP_SUMMARY"
