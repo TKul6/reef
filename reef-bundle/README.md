@@ -3,7 +3,7 @@
 `ReefDagBundle` is the Airflow half of Reef. It keeps your DAG files in sync with a Reef server, polling for a new
 bundle on every refresh and re-downloading only when the content has actually changed.
 
-For the server that answers those calls, see the [Reef server README](../reef/README.md).
+For the server that answers those calls, see the [Reef server README](../reef-server/README.md).
 
 ---
 
