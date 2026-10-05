@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/TKul6/reef/compare/reef-bundle-v1.0.2...reef-bundle-v1.0.3) (2026-10-05)
+
+
+### Bug Fixes
+
+* broken link  ([#23](https://github.com/TKul6/reef/issues/23)) ([366029b](https://github.com/TKul6/reef/commit/366029b0d6d1d4c81049e5e96cc443aa3a36a865))
+
 ## [1.0.2](https://github.com/TKul6/reef/compare/reef-bundle-v1.0.1...reef-bundle-v1.0.2) (2026-10-05)
 
 
