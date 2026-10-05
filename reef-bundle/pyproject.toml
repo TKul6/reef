@@ -4,7 +4,13 @@ version = "1.0.1"
 description = "Airflow DAG bundle that fetches versioned DAGs from a Reef server."
 authors = ["TKul6 <TKul6@github.com>"]
 readme = "README.md"
+homepage = "https://github.com/TKul6/reef"
+repository = "https://github.com/TKul6/reef"
+documentation = "https://github.com/TKul6/reef/tree/HEAD/reef-bundle"
 packages = [{include = "reef_bundle"}]
+
+[tool.poetry.urls]
+Issues = "https://github.com/TKul6/reef/issues"
 
 [tool.poetry.dependencies]
 python = "^3.10"
