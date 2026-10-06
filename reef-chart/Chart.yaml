@@ -11,7 +11,7 @@ keywords:
   - reef-server
 
 # The chart's own version, bumped per chart change and independent of the server's.
-version: 0.2.0
+version: 0.2.1
 
 # The reef-server version this chart is written against — not necessarily the one that runs. The
 # image is built by whoever installs the chart (see values.yaml), so this records which base image
