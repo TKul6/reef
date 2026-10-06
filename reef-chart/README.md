@@ -33,7 +33,8 @@ See [Building an image with your DAGs](../reef-server/README.md#building-an-imag
 ## Installing
 
 ```bash
-helm install dags ./reef-chart \
+helm install dags oci://ghcr.io/tkul6/reef-charts/reef-server \
+  --version 0.2.0 \
   --namespace airflow \
   --set image.repository=my-registry.example.com/my-dags \
   --set image.tag=1.2.0
@@ -49,6 +50,13 @@ image:
 
 replicaCount: 2
 ```
+
+```bash
+helm install dags oci://ghcr.io/tkul6/reef-charts/reef-server --version 0.2.0 --namespace airflow --values my-values.yaml
+```
+
+Working from a checkout instead — say, to try an unreleased change — point Helm at the local directory in place of the
+OCI reference:
 
 ```bash
 helm install dags ./reef-chart --namespace airflow --values my-values.yaml

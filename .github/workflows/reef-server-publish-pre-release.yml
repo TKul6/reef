@@ -48,7 +48,7 @@ jobs:
       # version field stays release-please's alone.
       - name: Stamp the beta version
         run: |
-          VERSION="$(poetry version --short)-beta-${{ github.event.pull_request.number }}"
+          VERSION="$(poetry version --short)-beta-${{ github.run_number }}"
           echo "IMAGE_VERSION=$VERSION" >> "$GITHUB_ENV"
 
       - name: Build the Reef server beta image
