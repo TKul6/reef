@@ -18,9 +18,9 @@ When you run Airflow on Kubernetes, getting new DAG files in front of the schedu
   something in production to come back unhealthy.
 - **Mounting a PVC** avoids the rebuild, but brings its own problems. Shared read-write volumes are awkward to operate,
   and they get genuinely tricky the moment your nodes span more than one availability zone.
-- Git Sync - While it provide an ability to swap dags without restarts it forces you to open a communication channel between the git server and the Kubernetes cluster (which might be problemtaic security wise).
+- Git Sync - While it provide an ability to swap dags without restarts it forces you to open a communication channel between the git server and the Kubernetes cluster (which might be problemtaic security wise). In adition, you might want to version your branches with a dedicated tag (which forces you to restart airflow whenever you want to premote the tag and use the new version.)
 
-Either way, the number of production restarts ends up being driven by how often your DAGs change, which is backwards.
+All the solutions above, requires restarting the airflow environment in order to use the new dag.
 
 ## The Solution
 
