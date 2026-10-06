@@ -30,9 +30,11 @@ jobs:
     name: Package the chart
     runs-on: ubuntu-latest
 
-    # Read-only: cutting the release is release.yml's job, this one only packages.
+    # Needs write access to GHCR to push the chart — cutting the release itself is still
+    # release.yml's job, this one only packages and publishes.
     permissions:
       contents: read
+      packages: write
 
     steps:
       # A tag push checks out the tagged commit, which is the release commit release-please
@@ -75,10 +77,23 @@ jobs:
       - name: List the built artifact
         run: ls -l dist
 
-      # TODO push the chart to a registry.
-      - name: Publish the chart
-        run: echo "No registry configured yet — the packaged chart does not leave the runner."
+      # OCI refs must be lowercase; github.repository_owner isn't guaranteed to be (ours is
+      # "TKul6"), so this is the one thing that needs deriving rather than interpolating directly.
+      - name: Derive the chart registry
+        run: |
+          echo "CHART_REGISTRY=oci://ghcr.io/tkul6/reef-charts" >> "$GITHUB_ENV"
+
+      # GITHUB_TOKEN is enough to push packages to this repository's own GHCR namespace — no extra
+      # secret to configure, unlike the Docker Hub beta push which is a different registry.
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username ${{ github.actor }} --password-stdin
+
+      # Lands at oci://ghcr.io/<owner>/reef-charts/reef-server:<version> — the chart name comes
+      # from Chart.yaml, Helm appends it to CHART_REGISTRY on push. That full path, not just
+      # CHART_REGISTRY, is what gets registered as the repository on ArtifactHub.
+      - name: Push the chart to GHCR
+        run: helm push "dist/reef-server-$VERSION.tgz" "$CHART_REGISTRY"
 
       - name: Report what was released
         run: |
-          echo "Released $GITHUB_REF_NAME and built $CHART_PACKAGE." >> "$GITHUB_STEP_SUMMARY"
+          echo "Released $GITHUB_REF_NAME, built $CHART_PACKAGE and pushed it to $CHART_REGISTRY/reef-server:$VERSION." >> "$GITHUB_STEP_SUMMARY"
